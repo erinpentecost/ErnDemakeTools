@@ -16,7 +16,7 @@ The first column is the sound file. The second is the subtitle. The third should
 
 Then you create the replacement dialogue like this:
 
-go run  "/home/ern/workspace/speechtotext/parse.go" "/home/ern/tes3/mods/Audio/DemakeAudio/New Audio Files" "/home/ern/workspace/speechtotext/Morrowind.txt,/home/ern/workspace/speechtotext/Bloodmoon.txt,/home/ern/workspace/speechtotext/Tribunal.txt,/home/ern/workspace/speechtotext/bloodmoon_says.csv"
+go run  "./parse.go" "/home/ern/tes3/mods/Audio/DemakeAudio/New Audio Files" "./dumps/Morrowind.txt,./dumps/Bloodmoon.txt,./dumps/Tribunal.txt,./dumps/big_says.csv"
 
 ## Double checking
 
