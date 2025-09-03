@@ -1,0 +1,6 @@
+<policymap>
+<policy domain="resource" name="map" value="16GiB"/>
+<policy domain="resource" name="width" value="32KP"/>
+<policy domain="resource" name="height" value="32KP"/>
+<policy domain="resource" name="area" value="32KP"/>
+</policymap>
