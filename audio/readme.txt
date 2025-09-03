@@ -33,3 +33,7 @@ go run  "./parse.go" "/home/ern/tes3/mods/Audio/DemakeAudio/New Audio Files" "./
 - https://github.com/erinpentecost/SAM
 
 `sox`, from your package manager.
+
+# TODO
+
+create a dummy folder with all voiceovers replaced by silence.mp3. this will be loaded first.
