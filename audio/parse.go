@@ -80,7 +80,29 @@ func parseFile(path string) ([]Record, error) {
 	return records, nil
 }
 
-func altFile(path string) ([]Record, error) {
+func normalizeRace(r string) string {
+	return map[string]string{
+		"a": "argonian",
+		"b": "breton",
+		"d": "dark elf",
+		"h": "high elf",
+		"i": "imperial",
+		"k": "khajiit",
+		"n": "nord",
+		"o": "orc",
+		"r": "redguard",
+		"w": "wood elf",
+	}[strings.ToLower(r)]
+}
+
+func normalizeSex(s string) string {
+	return map[string]string{
+		"f": "female",
+		"m": "male",
+	}[strings.ToLower(s)]
+}
+
+func csvFile(path string) ([]Record, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -103,10 +125,28 @@ func altFile(path string) ([]Record, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error reading CSV: %q: %v", line, err)
 		}
-		records = append(records, Record{
+		if len(csvRecords[0]) < 2 {
+			return nil, fmt.Errorf("expected at least 2 columns in %q", line)
+		}
+
+		rec := Record{
 			SoundFile: csvRecords[0][0],
-			Response:  csvRecords[0][1],
-		})
+		}
+
+		if strings.HasPrefix(csvRecords[0][1], "?") {
+			rec.Response = getFill(csvRecords[0][1])
+		} else {
+			rec.Response = csvRecords[0][1]
+		}
+
+		if len(csvRecords[0]) > 2 {
+			rec.Race = normalizeRace(csvRecords[0][2])
+		}
+		if len(csvRecords[0]) > 3 {
+			rec.Race = normalizeSex(csvRecords[0][3])
+		}
+
+		records = append(records, rec)
 	}
 
 	// Append the last record
@@ -208,7 +248,7 @@ func main() {
 		var frecords []Record
 		var err error
 		if filepath.Ext(f) == ".csv" {
-			frecords, err = altFile(f)
+			frecords, err = csvFile(f)
 		} else {
 			frecords, err = parseFile(f)
 		}
