@@ -133,7 +133,9 @@ func csvFile(path string) ([]Record, error) {
 			SoundFile: csvRecords[0][0],
 		}
 
-		if strings.HasPrefix(csvRecords[0][1], "?") {
+		if len(csvRecords[0][1]) == 0 {
+			return nil, fmt.Errorf("No subtitle record for %q", line)
+		} else if strings.HasPrefix(csvRecords[0][1], "?") {
 			rec.Response = getFill(csvRecords[0][1])
 		} else {
 			rec.Response = csvRecords[0][1]
@@ -143,7 +145,7 @@ func csvFile(path string) ([]Record, error) {
 			rec.Race = normalizeRace(csvRecords[0][2])
 		}
 		if len(csvRecords[0]) > 3 {
-			rec.Race = normalizeSex(csvRecords[0][3])
+			rec.Sex = normalizeSex(csvRecords[0][3])
 		}
 
 		records = append(records, rec)
@@ -163,71 +165,80 @@ func csvFile(path string) ([]Record, error) {
 func getVoice(r *Record) []string {
 	// https://airdorf.fandom.com/wiki/Voice_Settings
 	// Counterintuitively, higher values for Pitch and Speed will lower them both, while lower values will raise them.
-	// // these all sound awful
+	// Pitch - Can change Gender, Age, and Voice Deepness. Default is 64.
+	// Speed - Rate of Speech. Default is 72.
+	// Mouth - Voice "stuffiness", also affects pitch. Default is 128.
+	// Throat - Voice "nasality". Default is 128.
 	switch r.Race {
 	case "argonian":
+		// ok
 		if r.Sex == "female" {
-			// too deep
-			return []string{"-pitch", "44", "-speed", "72", "-throat", "60", "-mouth", "132"}
+			return []string{"-pitch", "40", "-speed", "56", "-throat", "120", "-mouth", "114"}
 		} else {
-			// tf?
-			return []string{"-pitch", "68", "-speed", "72", "-throat", "64", "-mouth", "128"}
+			return []string{"-pitch", "63", "-speed", "56", "-throat", "120", "-mouth", "114"}
 		}
 	case "breton":
+		// ok
 		if r.Sex == "female" {
-			// good? no
-			return []string{"-pitch", "40", "-speed", "74", "-throat", "120", "-mouth", "128"}
+			return []string{"-pitch", "40", "-speed", "72", "-throat", "128", "-mouth", "50"}
 		} else {
-			// way too deep
-			return []string{"-pitch", "64", "-speed", "74", "-throat", "120", "-mouth", "129"}
+			return []string{"-pitch", "61", "-speed", "72", "-throat", "128", "-mouth", "50"}
 		}
 	case "dark elf":
+		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "45", "-speed", "72", "-throat", "92", "-mouth", "116"}
+			return []string{"-pitch", "45", "-speed", "72", "-throat", "115", "-mouth", "120"}
 		} else {
-			return []string{"-pitch", "66", "-speed", "72", "-throat", "96", "-mouth", "110"}
+			return []string{"-pitch", "64", "-speed", "72", "-throat", "105", "-mouth", "110"}
 		}
 	case "high elf":
+		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "74", "-throat", "110", "-mouth", "150"}
+			return []string{"-pitch", "40", "-speed", "68", "-throat", "150", "-mouth", "128"}
 		} else {
-			return []string{"-pitch", "64", "-speed", "74", "-throat", "110", "-mouth", "150"}
+			return []string{"-pitch", "64", "-speed", "68", "-throat", "150", "-mouth", "128"}
 		}
 	case "imperial":
+		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "72", "-throat", "124", "-mouth", "124"}
+			return []string{"-pitch", "30", "-speed", "72", "-throat", "115", "-mouth", "128"}
 		} else {
-			return []string{"-pitch", "64", "-speed", "72", "-throat", "128", "-mouth", "120"}
+			return []string{"-pitch", "64", "-speed", "72", "-throat", "105", "-mouth", "128"}
 		}
 	case "khajiit":
+		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "72", "-throat", "108", "-mouth", "144"}
+			return []string{"-pitch", "40", "-speed", "56", "-throat", "165", "-mouth", "116"}
 		} else {
-			return []string{"-pitch", "64", "-speed", "72", "-throat", "112", "-mouth", "140"}
+			return []string{"-pitch", "60", "-speed", "56", "-throat", "165", "-mouth", "116"}
 		}
 	case "nord":
+		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "72", "-throat", "144", "-mouth", "122"}
+			return []string{"-pitch", "38", "-speed", "72", "-throat", "128", "-mouth", "30"}
 		} else {
-			return []string{"-pitch", "64", "-speed", "72", "-throat", "150", "-mouth", "118"}
+			return []string{"-pitch", "64", "-speed", "72", "-throat", "128", "-mouth", "30"}
 		}
 	case "orc":
+		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "60", "-speed", "72", "-throat", "110", "-mouth", "105"}
+			return []string{"-pitch", "60", "-speed", "72", "-throat", "97", "-mouth", "130"}
 		} else {
-			return []string{"-pitch", "72", "-speed", "72", "-throat", "110", "-mouth", "105"}
+			return []string{"-pitch", "90", "-speed", "72", "-throat", "97", "-mouth", "130"}
 		}
 	case "redguard":
+		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "72", "-throat", "112", "-mouth", "132"}
+			return []string{"-pitch", "43", "-speed", "71", "-throat", "145", "-mouth", "145"}
 		} else {
-			return []string{"-pitch", "64", "-speed", "72", "-throat", "118", "-mouth", "128"}
+			return []string{"-pitch", "80", "-speed", "72", "-throat", "145", "-mouth", "145"}
 		}
 	case "wood elf":
+		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "74", "-throat", "100", "-mouth", "140"}
+			return []string{"-pitch", "30", "-speed", "65", "-throat", "15", "-mouth", "50"}
 		} else {
-			return []string{"-pitch", "60", "-speed", "74", "-throat", "100", "-mouth", "140"}
+			return []string{"-pitch", "40", "-speed", "65", "-throat", "15", "-mouth", "50"}
 		}
 	}
 
@@ -320,7 +331,9 @@ func main() {
 				outPath = outPath[:len(outPath)-4] + ".mp3"
 				fallthrough
 			case ".mp3":
-				toMP3(tmpFile, outPath)
+				if err := toMP3(tmpFile, outPath); err != nil {
+					return fmt.Errorf("%q: %v", outPath, err)
+				}
 			default:
 				return fmt.Errorf("unknown format for file %q", r.SoundFile)
 			}
