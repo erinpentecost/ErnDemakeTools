@@ -161,17 +161,24 @@ func csvFile(path string) ([]Record, error) {
 }
 
 func getVoice(r *Record) []string {
+	// https://airdorf.fandom.com/wiki/Voice_Settings
+	// Counterintuitively, higher values for Pitch and Speed will lower them both, while lower values will raise them.
+	// // these all sound awful
 	switch r.Race {
 	case "argonian":
 		if r.Sex == "female" {
+			// too deep
 			return []string{"-pitch", "44", "-speed", "72", "-throat", "60", "-mouth", "132"}
 		} else {
+			// tf?
 			return []string{"-pitch", "68", "-speed", "72", "-throat", "64", "-mouth", "128"}
 		}
 	case "breton":
 		if r.Sex == "female" {
+			// good? no
 			return []string{"-pitch", "40", "-speed", "74", "-throat", "120", "-mouth", "128"}
 		} else {
+			// way too deep
 			return []string{"-pitch", "64", "-speed", "74", "-throat", "120", "-mouth", "129"}
 		}
 	case "dark elf":

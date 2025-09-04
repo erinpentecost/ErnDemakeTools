@@ -18,7 +18,11 @@ This won't capture all dialogue! To get all the dialogue, run `./datafolder.sh "
 
 Then you create the replacement dialogue like this:
 
-go run  "./parse.go" "/home/ern/tes3/mods/Audio/DemakeAudio/New Audio Files" "./dumps/Morrowind.txt,./dumps/Bloodmoon.txt,./dumps/Tribunal.txt,./dumps/big_says.csv"
+go run  "." "/home/ern/tes3/mods/Audio/DemakeAudio/00 Vanilla" "./dumps/Morrowind.txt,./dumps/Bloodmoon.txt,./dumps/Tribunal.txt,./dumps/big_says.csv"
+
+And the fill with this:
+
+go run  "." "/home/ern/tes3/mods/Audio/DemakeAudio/00 Vanilla extras" "./dumps/mw_datadir.csv"
 
 ## Double checking
 
