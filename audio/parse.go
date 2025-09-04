@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -167,82 +168,154 @@ func getVoice(r *Record) []string {
 	// Counterintuitively, higher values for Pitch and Speed will lower them both, while lower values will raise them.
 	// Pitch - Can change Gender, Age, and Voice Deepness. Default is 64.
 	// Speed - Rate of Speech. Default is 72.
-	// Mouth - Voice "stuffiness", also affects pitch. Default is 128.
 	// Throat - Voice "nasality". Default is 128.
+	// Mouth - Voice "stuffiness", also affects pitch. Default is 128.
+
+	pitch := 64
+	speed := 72
+	throat := 128
+	mouth := 128
+
 	switch r.Race {
 	case "argonian":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "56", "-throat", "120", "-mouth", "114"}
+			pitch = 40
+			speed = 56
+			throat = 120
+			mouth = 114
 		} else {
-			return []string{"-pitch", "63", "-speed", "56", "-throat", "120", "-mouth", "114"}
+			pitch = 63
+			speed = 56
+			throat = 120
+			mouth = 114
 		}
 	case "breton":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "72", "-throat", "128", "-mouth", "50"}
+			pitch = 40
+			speed = 74
+			throat = 128
+			mouth = 50
 		} else {
-			return []string{"-pitch", "61", "-speed", "72", "-throat", "128", "-mouth", "50"}
+			pitch = 61
+			speed = 72
+			throat = 128
+			mouth = 50
 		}
 	case "dark elf":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "45", "-speed", "72", "-throat", "115", "-mouth", "120"}
+			pitch = 45
+			speed = 72
+			throat = 115
+			mouth = 120
 		} else {
-			return []string{"-pitch", "64", "-speed", "72", "-throat", "105", "-mouth", "110"}
+			pitch = 64
+			speed = 72
+			throat = 105
+			mouth = 110
 		}
 	case "high elf":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "68", "-throat", "150", "-mouth", "128"}
+			pitch = 40
+			speed = 68
+			throat = 150
+			mouth = 128
 		} else {
-			return []string{"-pitch", "64", "-speed", "68", "-throat", "150", "-mouth", "128"}
+			pitch = 64
+			speed = 68
+			throat = 150
+			mouth = 128
 		}
 	case "imperial":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "30", "-speed", "72", "-throat", "115", "-mouth", "128"}
+			pitch = 30
+			speed = 72
+			throat = 115
+			mouth = 128
 		} else {
-			return []string{"-pitch", "64", "-speed", "72", "-throat", "105", "-mouth", "128"}
+			pitch = 64
+			speed = 72
+			throat = 105
+			mouth = 128
 		}
 	case "khajiit":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "40", "-speed", "56", "-throat", "165", "-mouth", "116"}
+			pitch = 40
+			speed = 56
+			throat = 165
+			mouth = 116
 		} else {
-			return []string{"-pitch", "60", "-speed", "56", "-throat", "165", "-mouth", "116"}
+			pitch = 60
+			speed = 56
+			throat = 165
+			mouth = 116
 		}
 	case "nord":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "38", "-speed", "72", "-throat", "128", "-mouth", "30"}
+			pitch = 38
+			speed = 72
+			throat = 128
+			mouth = 30
 		} else {
-			return []string{"-pitch", "64", "-speed", "72", "-throat", "128", "-mouth", "30"}
+			pitch = 64
+			speed = 72
+			throat = 128
+			mouth = 30
 		}
 	case "orc":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "60", "-speed", "72", "-throat", "97", "-mouth", "130"}
+			pitch = 60
+			speed = 72
+			throat = 97
+			mouth = 130
 		} else {
-			return []string{"-pitch", "90", "-speed", "72", "-throat", "97", "-mouth", "130"}
+			pitch = 90
+			speed = 72
+			throat = 97
+			mouth = 130
 		}
 	case "redguard":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "43", "-speed", "71", "-throat", "145", "-mouth", "145"}
+			pitch = 43
+			speed = 71
+			throat = 145
+			mouth = 145
 		} else {
-			return []string{"-pitch", "80", "-speed", "72", "-throat", "145", "-mouth", "145"}
+			pitch = 80
+			speed = 72
+			throat = 145
+			mouth = 145
 		}
 	case "wood elf":
 		// ok
 		if r.Sex == "female" {
-			return []string{"-pitch", "30", "-speed", "65", "-throat", "15", "-mouth", "50"}
+			pitch = 30
+			speed = 65
+			throat = 15
+			mouth = 50
 		} else {
-			return []string{"-pitch", "40", "-speed", "65", "-throat", "15", "-mouth", "50"}
+			pitch = 40
+			speed = 65
+			throat = 15
+			mouth = 50
 		}
 	}
 
-	return []string{"-pitch", "64", "-speed", "72", "-throat", "128", "-mouth", "128"}
+	return []string{
+		"-pitch", strconv.Itoa(pitch),
+		"-speed", strconv.Itoa(speed),
+		"-throat", strconv.Itoa(throat),
+		"-mouth", strconv.Itoa(mouth),
+	}
+
 }
 
 func main() {
@@ -367,7 +440,8 @@ func copyFile(sourcePath, destPath string) error {
 }
 
 func toMP3(inFile string, outPath string) error {
-	cmd := exec.Command("sox", "-r", "12000", inFile, outPath)
+	//cmd := exec.Command("sox", "-r", "12000", inFile, outPath)
+	cmd := exec.Command("sox", inFile, outPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("Command %q failed: %v\nOutput: %s\n", cmd.String(), err, output)

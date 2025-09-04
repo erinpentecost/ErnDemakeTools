@@ -6,7 +6,12 @@ import (
 )
 
 func getFill(category string) string {
-	cat := fillDialogue[strings.TrimPrefix(strings.ToLower(category), "?")]
+	// only take last 3
+	token := strings.ToLower(category)
+	if len(token) > 3 {
+		token = token[len(token)-3:]
+	}
+	cat := fillDialogue[token]
 	if len(cat) == 0 {
 		return "uh"
 	}
