@@ -5,4 +5,4 @@ pwd
 
 go get "golang.org/x/sync/errgroup" || exit 5
 
-go run ./shrinker.go kram "$@"
+go run . kram "$@"

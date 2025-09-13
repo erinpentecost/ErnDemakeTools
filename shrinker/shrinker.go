@@ -100,6 +100,11 @@ func useSegmentation(path string) bool {
 	return strings.Contains(normalized, "_f_h") || strings.Contains(normalized, "_m_h")
 }
 
+func reduceValueContrast(path string) bool {
+	normalized := strings.ToLower(filepath.Base(path))
+	return strings.HasPrefix(normalized, "water")
+}
+
 func kram(ctx context.Context, rootDir string, outDir string) {
 	//kram_cmd = ['kram', 'encode', '-f', f'astc{args.block_size}', '-encoder', 'astcenc', '-quality', args.quality, '-flip', '-i', str(thread_temp_png), '-o', str(final_ktx_path)]
 	repath := func(f string) (string, error) {
@@ -107,7 +112,9 @@ func kram(ctx context.Context, rootDir string, outDir string) {
 		if err != nil {
 			return "", err
 		}
-		return filepath.Join(outDir, absFile[len(rootDir):]), nil
+		newPath := filepath.Join(outDir, absFile[len(rootDir):])
+
+		return strings.TrimSuffix(newPath, filepath.Ext(newPath)) + ".ktx", nil
 	}
 
 	var counter atomic.Int64
@@ -159,7 +166,6 @@ func kram(ctx context.Context, rootDir string, outDir string) {
 			}
 
 			// now that we have a png, run kram.
-			// ['kram', 'encode', '-f', f'astc{args.block_size}', '-encoder', 'astcenc', '-quality', args.quality, '-flip', '-i', str(thread_temp_png), '-o', str(final_ktx_path)]
 			kramArgs := []string{
 				"encode",
 				"-f",
@@ -322,8 +328,11 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 						"25%",
 						"-filter",
 						"Point",
-						outputFilePath,
 					}
+					if reduceValueContrast(outputFilePath) {
+						args = append(args, "-brightness-contrast", "0x-50")
+					}
+					args = append(args, outputFilePath)
 				} else {
 					args = []string{
 						f,
@@ -335,9 +344,12 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 						"-resize",
 						"25%",
 						"-filter",
-						"Point",
-						outputFilePath,
+						"Point"}
+
+					if reduceValueContrast(outputFilePath) {
+						args = append(args, "-brightness-contrast", "0x-50")
 					}
+					args = append(args, outputFilePath)
 				}
 
 				if err := runProc("magick", args, envOverride); err != nil {
