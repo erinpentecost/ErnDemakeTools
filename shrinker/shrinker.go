@@ -47,6 +47,9 @@ var blocklist = []string{
 	"tx_leveluptoken.dds",
 	"tx_scroll_bar.dds",
 	"tx_scroll_button.dds",
+	// this causes seizures during ash storms
+	"tx_ash_flake.dds",
+	"tx_ash_cloud.dds",
 }
 
 // envOverride sets a custom policy file for magick
