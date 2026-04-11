@@ -50,6 +50,10 @@ var blocklist = []string{
 	// this causes seizures during ash storms
 	"tx_ash_flake.dds",
 	"tx_ash_cloud.dds",
+	// don't mess with specular, normal, and normal heightmap textures
+	"_spec.dds",
+	//"_n.dds", // there are false positives here
+	"_nh.dds",
 }
 
 // envOverride sets a custom policy file for magick
