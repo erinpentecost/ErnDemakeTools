@@ -54,6 +54,9 @@ var blocklist = []string{
 	"_spec.dds",
 	//"_n.dds", // there are false positives here
 	"_nh.dds",
+	"tx_dwrv_blackbelt00", // pure black texture messes with other dwarven stuff
+	//"tx_c_ring_", // these are size 0?
+	//"tx_dwrv_",   // these are pure black??
 }
 
 // envOverride sets a custom policy file for magick
@@ -289,8 +292,10 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 				"-",
 				"-background", "none",
 				"-append",
-				//"-channel",
-				//"RGB",
+				"-channel",
+				"RGB",
+				"-alpha",
+				"off",
 				"-posterize",
 				posterize,
 				"-unique-colors",
