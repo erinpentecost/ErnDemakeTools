@@ -7,4 +7,8 @@
 
 /home/ern/workspace/ErnDemakeTools/shrinker/kram.sh '/home/ern/tes3/mods/TexturePacks/Demake/00 Vanilla' '/home/ern/tes3/mods/TexturePacks/Demake/00 Vanilla ktx' 
 
-/home/ern/tes3/mods/TexturePacks/Demake/shrinker/shrink.sh '/home/ern/Downloads/Tamriel Rebuilt 25.08.12-42145-25-08-12-1755040619/00 Core' '/home/ern/tes3/mods/TexturePacks/Demake/04 Tamriel Data TWO'
+/home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mods/ModdingResources/TamrielData/00 Data Files' '/home/ern/tes3/mods/TexturePacks/Demake/04 Tamriel Data'
+
+
+
+/home/ern/workspace/ErnDemakeTools/shrinker/kram.sh '/home/ern/Downloads/Demake/00 Vanilla' '/home/ern/Downloads/Demake/00 Vanilla ktx'

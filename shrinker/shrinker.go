@@ -356,11 +356,27 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 						"-resize",
 						"25%",
 						"-filter",
-						"Point"}
+						"Point",
+					}
 
 					if reduceValueContrast(outputFilePath) {
 						args = append(args, "-brightness-contrast", "0x-50")
 					}
+
+					fileData, err := os.ReadFile(f)
+					if err != nil {
+						return fmt.Errorf("Failed to read file %q", f)
+					}
+					// skipping mipmaps saves on disk space
+					args = append(args, "-define", "dds:mipmaps=0")
+					// use original encoding I guess
+					switch DecodeSchema(fileData) {
+					case DXT1:
+						args = append(args, "-define", "dds:compression=dxt1")
+					case DXT5:
+						args = append(args, "-define", "dds:compression=dxt5")
+					}
+
 					args = append(args, outputFilePath)
 				}
 
