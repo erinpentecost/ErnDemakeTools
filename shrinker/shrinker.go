@@ -56,7 +56,7 @@ var blocklist = []string{
 	"_nh.dds",
 	"tx_dwrv_blackbelt00", // pure black texture messes with other dwarven stuff
 	//"tx_c_ring_", // these are size 0?
-	//"tx_dwrv_",   // these are pure black??
+	"tx_sun_flash_grey_05.dds", // crazy sun glare
 }
 
 // envOverride sets a custom policy file for magick
