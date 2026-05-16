@@ -320,15 +320,15 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 				var args []string
 				args = []string{
 					f,
-					"-channel",
-					"RGB",
-					"-remap",
-					colorMapFile,
+					"(", "+clone", "-alpha", "extract", ")",
+					"-alpha", "off",
+					"-channel", "RGB",
+					"-remap", colorMapFile,
 					"+channel",
-					"-resize",
-					"25%",
-					"-filter",
-					"Point",
+					"-resize", "25%",
+					"-filter", "Point",
+					"-compose", "CopyOpacity",
+					"-composite",
 				}
 
 				if reduceValueContrast(outputFilePath) {
@@ -377,15 +377,15 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 					// posterizing. this makes faces less cursed.
 					args = []string{
 						f,
-						"-channel",
-						"RGB",
-						"-kmeans",
-						"27",
+						"(", "+clone", "-alpha", "extract", ")",
+						"-alpha", "off",
+						"-channel", "RGB",
+						"-kmeans", "27",
 						"+channel",
-						"-resize",
-						"25%",
-						"-filter",
-						"Point",
+						"-resize", "25%",
+						"-filter", "Point",
+						"-compose", "CopyOpacity",
+						"-composite",
 					}
 					if reduceValueContrast(outputFilePath) {
 						args = append(args, "-brightness-contrast", "0x-50")
