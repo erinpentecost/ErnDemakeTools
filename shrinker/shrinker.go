@@ -21,11 +21,10 @@ import (
 )
 
 const (
-	workers           = 12
-	colorMapShrink    = "256x256>"
-	posterize         = "3"
-	finalShrink       = "25%"
-	allowSegmentation = false
+	workers         = 12
+	colorMapShrink  = "256x256>"
+	posterizeNormal = "3"
+	finalShrink     = "25%"
 
 	kramBlockSize = "8x8"
 	kramQuality   = "80"
@@ -99,15 +98,6 @@ func getGroup(path string, info os.FileInfo) string {
 	prefix = filepath.Base(prefix)
 
 	return prefix
-}
-
-func useSegmentation(path string) bool {
-	// this prevents textures from getting too crunchy
-	if !allowSegmentation {
-		return false
-	}
-	normalized := strings.ToLower(filepath.Base(path))
-	return strings.Contains(normalized, "_f_h") || strings.Contains(normalized, "_m_h")
 }
 
 func reduceValueContrast(path string) bool {
@@ -291,7 +281,6 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 
 			// In this next step, we posterize all the members of the prefix
 			// in order to build up a shared color map for the entire prefix.
-
 			posterizeArgs := []string{
 				"-",
 				"-background", "none",
@@ -301,7 +290,7 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 				"-alpha",
 				"off",
 				"-posterize",
-				posterize,
+				posterizeNormal,
 				"-unique-colors",
 				colorMapFile,
 			}
@@ -326,9 +315,42 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 					return fmt.Errorf("Failed to make output dir for %q: %v", outputFilePath, err)
 				}
 
+				// Posterize!
 				fmt.Printf("Processing file: %s\n", f)
 				var args []string
-				if useSegmentation(f) {
+				args = []string{
+					f,
+					"-channel",
+					"RGB",
+					"-remap",
+					colorMapFile,
+					"+channel",
+					"-resize",
+					"25%",
+					"-filter",
+					"Point",
+				}
+
+				if reduceValueContrast(outputFilePath) {
+					args = append(args, "-brightness-contrast", "0x-50")
+				}
+
+				// Don't bother with mipmaps. The textures are already small.
+				args = append(args, "-define", "dds:mipmaps=0")
+
+				args = append(args, outputFilePath)
+
+				if err := runProc("magick", args, envOverride); err != nil {
+					return fmt.Errorf("Failed to process file %q: %v", f, err)
+				}
+
+				// Claude: Now we have to analyze the output image's colors.
+				// If there are fewer than 3 colors, we need to instead do this
+				// segmentation strategy for reducing colors:
+				notEnoughDistinctColors := true
+
+				if notEnoughDistinctColors {
+					fmt.Printf("Segmenting file: %s\n", f)
 					// segment first using kmeans to reduce noise before
 					// posterizing. this makes faces less cursed.
 					args = []string{
@@ -337,8 +359,6 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 						"RGB",
 						"-kmeans",
 						"27",
-						"-remap",
-						colorMapFile,
 						"+channel",
 						"-resize",
 						"25%",
@@ -349,19 +369,6 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 						args = append(args, "-brightness-contrast", "0x-50")
 					}
 					args = append(args, outputFilePath)
-				} else {
-					args = []string{
-						f,
-						"-channel",
-						"RGB",
-						"-remap",
-						colorMapFile,
-						"+channel",
-						"-resize",
-						"25%",
-						"-filter",
-						"Point",
-					}
 
 					if reduceValueContrast(outputFilePath) {
 						args = append(args, "-brightness-contrast", "0x-50")
@@ -371,11 +378,12 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 					args = append(args, "-define", "dds:mipmaps=0")
 
 					args = append(args, outputFilePath)
+
+					if err := runProc("magick", args, envOverride); err != nil {
+						return fmt.Errorf("Failed to process file %q: %v", f, err)
+					}
 				}
 
-				if err := runProc("magick", args, envOverride); err != nil {
-					return fmt.Errorf("Failed to process file %q: %v", f, err)
-				}
 			}
 			return nil
 		})
