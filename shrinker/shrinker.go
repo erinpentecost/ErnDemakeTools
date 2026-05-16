@@ -265,9 +265,10 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 			fmt.Printf("Processing prefix: %s\n", prefix)
 
 			// Create the output filename using the shared prefix.
-			// This fails a lot if the file gets too big.
 			colorMapFile := filepath.Join(tempDir, fmt.Sprintf("%s.png", prefix))
 
+			// In the first pass, we shrink all the members of the prefix group
+			// and place the results in an in-memory buffer.
 			shrinkArgs := []string{}
 			shrinkArgs = append(shrinkArgs, files...)
 			shrinkArgs = append(shrinkArgs,
@@ -287,6 +288,9 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 			if err := shrinkCmd.Run(); err != nil {
 				return fmt.Errorf("Failed to shrink prefix '%s': %v", prefix, err)
 			}
+
+			// In this next step, we posterize all the members of the prefix
+			// in order to build up a shared color map for the entire prefix.
 
 			posterizeArgs := []string{
 				"-",
@@ -311,7 +315,7 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 			}
 			defer os.Remove(colorMapFile)
 
-			// Now rescale + recolor the files
+			// Finally, we rescale + recolor the individual files.
 			for _, f := range files {
 				outputFilePath, err := repath(f)
 				if err != nil {
@@ -363,19 +367,8 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 						args = append(args, "-brightness-contrast", "0x-50")
 					}
 
-					fileData, err := os.ReadFile(f)
-					if err != nil {
-						return fmt.Errorf("Failed to read file %q", f)
-					}
-					// skipping mipmaps saves on disk space
+					// Don't bother with mipmaps. The textures are already small.
 					args = append(args, "-define", "dds:mipmaps=0")
-					// use original encoding I guess
-					switch DecodeSchema(fileData) {
-					case DXT1:
-						args = append(args, "-define", "dds:compression=dxt1")
-					case DXT5:
-						args = append(args, "-define", "dds:compression=dxt5")
-					}
 
 					args = append(args, outputFilePath)
 				}
