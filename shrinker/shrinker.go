@@ -63,54 +63,30 @@ var blocklist = []string{
 	"td_detect_invisibility_icon.dds",
 }
 
-var prefixStrip = []string{
-	"tx_", // generic
-	// these are from https://wiki.project-tamriel.com/wiki/Asset_Guidelines
-	"tr_",
-	"pc_",
-	"sky_",
-	"hr_",
-	"hf_",
-	"els_",
-	"sum_",
-	"va_",
-	"bm_",
-}
-
-func stripPrefixes(a string) string {
-	for _, pref := range prefixStrip {
-		if trimmed, found := strings.CutPrefix(a, pref); found {
-			return trimmed
-		}
-	}
-	return a
-}
-
 // envOverride sets a custom policy file for magick
 var envOverride = []string{"MAGICK_CONFIGURE_PATH=."}
 
 // getGroup returns a key that will group this file with other files that have the same key.
 // If grouped, they are posterized together and will share the same pallete.
 // If this returns an empty string, it is not processed by shrinker.
-func getGroup(path string, info os.FileInfo) string {
+func getGroup(path string) string {
+	fileName := strings.ToLower(filepath.Base(path))
+
 	// skip menu files
 	for _, block := range blocklist {
-		if strings.Contains(strings.ToLower(info.Name()), block) {
+		if strings.Contains(fileName, block) {
 			return ""
 		}
 	}
 
-	// prefix determines which group the texture is posterized with.
-	fileName := strings.ToLower(filepath.Base(info.Name()))
 	fileName = strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	fileName = stripPrefixes(fileName)
+
+	// prefix determines which group the texture is posterized with.
 
 	var prefix string
 	if strings.HasPrefix(fileName, "vfx_") {
 		prefix = fileName
-	} else if strings.HasPrefix(fileName, "tx_") && strings.Count(filepath.Base(info.Name()), "_") == 1 {
-		prefix = fileName
-	} else if lastUnderscoreIndex := strings.LastIndex(info.Name(), "_"); lastUnderscoreIndex == -1 {
+	} else if lastUnderscoreIndex := strings.LastIndex(fileName, "_"); lastUnderscoreIndex == -1 {
 		// there is no underscore. strip off numbers from suffix
 		prefix = fileName
 		firstNum := strings.IndexAny(prefix, "0123456789")
@@ -125,9 +101,8 @@ func getGroup(path string, info os.FileInfo) string {
 		prefix = fileName
 	} else {
 		// Extract the prefix, which is the full path to the last underscore.
-		prefix = path[:len(path)-len(fileName)+lastUnderscoreIndex]
+		prefix = fileName[:lastUnderscoreIndex]
 	}
-	prefix = fileName
 
 	return prefix
 }
@@ -247,7 +222,7 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 			!slices.Contains(strings.Split(strings.ToLower(path), string(filepath.Separator)), "textures") {
 			return nil
 		}
-		if group := getGroup(path, info); group != "" {
+		if group := getGroup(path); group != "" {
 			filesByPrefix[group] = append(filesByPrefix[group], path)
 		}
 		return nil
@@ -318,7 +293,7 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 		fmt.Println("FAILURE!!")
 		os.Exit(33)
 	}
-	fmt.Printf("Posterized files: %d, Segmented files: %d\n", posterizedFileCount.Load(), segmentedFileCount.Load())
+	fmt.Printf("Groups: %d, Posterized files: %d, Segmented files: %d\n", len(filesByPrefix), posterizedFileCount.Load(), segmentedFileCount.Load())
 }
 
 // check pc_wolf.dds
