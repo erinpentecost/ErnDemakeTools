@@ -344,10 +344,32 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 					return fmt.Errorf("Failed to process file %q: %v", f, err)
 				}
 
-				// Claude: Now we have to analyze the output image's colors.
-				// If there are fewer than 3 colors, we need to instead do this
-				// segmentation strategy for reducing colors:
-				notEnoughDistinctColors := true
+				// Analyze the output image's colors. If there are fewer than 3
+				// distinct colors, fall back to a kmeans segmentation strategy
+				// (the remap approach produces banding/cursed results on simple textures).
+				colorCountOut, colorCountErr := exec.Command(
+					"magick", outputFilePath,
+					"-channel", "RGB",
+					"-alpha", "off",
+					"-unique-colors",
+					"-format", "%w",
+					"info:",
+				).Output()
+				notEnoughDistinctColors := false
+				if colorCountErr != nil {
+					// If we can't count colors, assume we need the fallback.
+					fmt.Printf("Warning: could not count colors for %q: %v\n", outputFilePath, colorCountErr)
+					notEnoughDistinctColors = true
+				} else {
+					var distinctColors int
+					if _, err := fmt.Sscanf(strings.TrimSpace(string(colorCountOut)), "%d", &distinctColors); err != nil {
+						fmt.Printf("Warning: could not parse color count for %q: %v\n", outputFilePath, err)
+						notEnoughDistinctColors = true
+					} else {
+						notEnoughDistinctColors = distinctColors < 3
+						fmt.Printf("Distinct colors in %q: %d\n", outputFilePath, distinctColors)
+					}
+				}
 
 				if notEnoughDistinctColors {
 					fmt.Printf("Segmenting file: %s\n", f)
@@ -365,11 +387,6 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 						"-filter",
 						"Point",
 					}
-					if reduceValueContrast(outputFilePath) {
-						args = append(args, "-brightness-contrast", "0x-50")
-					}
-					args = append(args, outputFilePath)
-
 					if reduceValueContrast(outputFilePath) {
 						args = append(args, "-brightness-contrast", "0x-50")
 					}
