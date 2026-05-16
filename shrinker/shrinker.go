@@ -58,6 +58,32 @@ var blocklist = []string{
 	"tx_dwrv_blackbelt00", // pure black texture messes with other dwarven stuff
 	//"tx_c_ring_", // these are size 0?
 	"tx_sun_flash_grey_05.dds", // crazy sun glare
+	"td_detect_enemy_icon.dds",
+	"td_detect_humanoid_icon.dds",
+	"td_detect_invisibility_icon.dds",
+}
+
+var prefixStrip = []string{
+	"tx_", // generic
+	// these are from https://wiki.project-tamriel.com/wiki/Asset_Guidelines
+	"tr_",
+	"pc_",
+	"sky_",
+	"hr_",
+	"hf_",
+	"els_",
+	"sum_",
+	"va_",
+	"bm_",
+}
+
+func stripPrefixes(a string) string {
+	for _, pref := range prefixStrip {
+		if trimmed, found := strings.CutPrefix(a, pref); found {
+			return trimmed
+		}
+	}
+	return a
 }
 
 // envOverride sets a custom policy file for magick
@@ -75,29 +101,33 @@ func getGroup(path string, info os.FileInfo) string {
 	}
 
 	// prefix determines which group the texture is posterized with.
+	fileName := strings.ToLower(filepath.Base(info.Name()))
+	fileName = strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	fileName = stripPrefixes(fileName)
+
 	var prefix string
-	if strings.HasPrefix(strings.ToLower(filepath.Base(info.Name())), "vfx_") {
-		prefix = filepath.Base(info.Name())
-	} else if strings.HasPrefix(strings.ToLower(filepath.Base(info.Name())), "tx_") && strings.Count(filepath.Base(info.Name()), "_") == 1 {
-		prefix = filepath.Base(info.Name())
+	if strings.HasPrefix(fileName, "vfx_") {
+		prefix = fileName
+	} else if strings.HasPrefix(fileName, "tx_") && strings.Count(filepath.Base(info.Name()), "_") == 1 {
+		prefix = fileName
 	} else if lastUnderscoreIndex := strings.LastIndex(info.Name(), "_"); lastUnderscoreIndex == -1 {
 		// there is no underscore. strip off numbers from suffix
-		prefix = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
+		prefix = fileName
 		firstNum := strings.IndexAny(prefix, "0123456789")
 		if firstNum != -1 {
 			prefix = prefix[:firstNum]
 		} else {
-			prefix = info.Name()
+			prefix = fileName
 		}
-	} else if lastHairIndex := strings.LastIndex(info.Name(), "_hair"); lastHairIndex != -1 {
+	} else if lastHairIndex := strings.LastIndex(fileName, "_hair"); lastHairIndex != -1 {
 		// Hair should not be grouped with skin during posterization.
 		//prefix = path[:len(path)-len(info.Name())+lastHairIndex] + "_hair"
-		prefix = info.Name()
+		prefix = fileName
 	} else {
 		// Extract the prefix, which is the full path to the last underscore.
-		prefix = path[:len(path)-len(info.Name())+lastUnderscoreIndex]
+		prefix = path[:len(path)-len(fileName)+lastUnderscoreIndex]
 	}
-	prefix = filepath.Base(prefix)
+	prefix = fileName
 
 	return prefix
 }
@@ -291,6 +321,7 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 	fmt.Printf("Posterized files: %d, Segmented files: %d\n", posterizedFileCount.Load(), segmentedFileCount.Load())
 }
 
+// check pc_wolf.dds
 func processFile(
 	f, colorMapFile string,
 	repath func(string) (string, error),
@@ -302,6 +333,12 @@ func processFile(
 	}
 	if err := os.MkdirAll(filepath.Dir(outputFilePath), os.ModePerm); err != nil {
 		return fmt.Errorf("failed to make output dir: %w", err)
+	}
+
+	// skip if file exists
+	if _, err := os.Stat(outputFilePath); err == nil {
+		fmt.Printf("Skipping file: %s\n", f)
+		return nil
 	}
 
 	fmt.Printf("Processing file: %s\n", f)
@@ -356,8 +393,8 @@ func processFile(
 	args = []string{
 		f,
 		"(", "+clone", "-alpha", "extract", ")",
-		"-alpha", "off", "-channel", "RGB", "-kmeans", "8",
-		"+channel", "-compose", "CopyOpacity", "-composite",
+		"-alpha", "off", "-channel", "RGB", "-kmeans", "6",
+		"+channel", "-resize", "25%", "-filter", "Point", "-compose", "CopyOpacity", "-composite",
 	}
 	if reduceValueContrast(outputFilePath) {
 		args = append(args, "-brightness-contrast", "0x-50")
@@ -391,7 +428,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error: The output path %q is messed up: %v", os.Args[3], err)
 	}
-	if err := os.Mkdir(outDir, os.ModePerm); err != nil {
+
+	if err := os.MkdirAll(outDir, os.ModePerm); err != nil {
 		log.Fatalf("Error: Failed to make %q: %v", outDir, err)
 	}
 
