@@ -7,6 +7,9 @@ This is tooling specific to my machine; I made absolutely no effort to make it p
 
 
 /home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mdataextract/' '/home/ern/tes3/mods/TexturePacks/Demake/00 Vanilla'
+/home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mods/ModdingResources/TamrielData/00 Data Files' '/home/ern/tes3/mods/TexturePacks/Demake/04 Tamriel Data'
+
+
 
 /home/ern/workspace/ErnDemakeTools/shrinker/kram.sh '/home/ern/tes3/mods/TexturePacks/Demake/00 Vanilla' '/home/ern/tes3/mods/TexturePacks/Demake/00 Vanilla ktx' 
 

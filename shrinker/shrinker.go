@@ -24,6 +24,7 @@ const (
 	workers         = 12
 	colorMapShrink  = "256x256>"
 	posterizeNormal = "3"
+	minColors       = 2
 	finalShrink     = "25%"
 
 	kramBlockSize = "8x8"
@@ -202,6 +203,9 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 		return filepath.Join(outDir, absFile[len(rootDir):]), nil
 	}
 
+	posterizedFileCount := 0
+	segmentedFileCount := 0
+
 	// filesByPrefix is a map to store the grouped file paths.
 	// The key is the shared prefix, and the value is a slice of full file paths.
 	filesByPrefix := make(map[string][]string)
@@ -255,7 +259,7 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 			fmt.Printf("Processing prefix: %s\n", prefix)
 
 			// Create the output filename using the shared prefix.
-			colorMapFile := filepath.Join(tempDir, fmt.Sprintf("%s.png", prefix))
+			colorMapFile := filepath.Join(tempDir, fmt.Sprintf("PNG32:%s.png", prefix))
 
 			// In the first pass, we shrink all the members of the prefix group
 			// and place the results in an in-memory buffer.
@@ -344,63 +348,68 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 					return fmt.Errorf("Failed to process file %q: %v", f, err)
 				}
 
-				// Analyze the output image's colors. If there are fewer than 3
-				// distinct colors, fall back to a kmeans segmentation strategy
-				// (the remap approach produces banding/cursed results on simple textures).
-				colorCountOut, colorCountErr := exec.Command(
-					"magick", outputFilePath,
-					"-channel", "RGB",
-					"-alpha", "off",
-					"-unique-colors",
-					"-format", "%w",
-					"info:",
-				).Output()
-				notEnoughDistinctColors := false
-				if colorCountErr != nil {
-					// If we can't count colors, assume we need the fallback.
-					fmt.Printf("Warning: could not count colors for %q: %v\n", outputFilePath, colorCountErr)
-					notEnoughDistinctColors = true
-				} else {
+				if minColors > 0 {
+					// check tx_poison_steam.dds
+
+					// Analyze the output image's colors. If there are fewer than 3
+					// distinct colors, fall back to a kmeans segmentation strategy
+					// (the remap approach produces banding/cursed results on simple textures).
+					colorCountOut, colorCountErr := exec.Command(
+						"magick", outputFilePath,
+						"-channel", "RGB",
+						"-alpha", "off",
+						"-unique-colors",
+						"-format", "%w",
+						"info:",
+					).Output()
+					notEnoughDistinctColors := false
 					var distinctColors int
-					if _, err := fmt.Sscanf(strings.TrimSpace(string(colorCountOut)), "%d", &distinctColors); err != nil {
-						fmt.Printf("Warning: could not parse color count for %q: %v\n", outputFilePath, err)
+					if colorCountErr != nil {
+						// If we can't count colors, assume we need the fallback.
+						fmt.Printf("Warning: could not count colors for %q: %v\n", outputFilePath, colorCountErr)
 						notEnoughDistinctColors = true
 					} else {
-						notEnoughDistinctColors = distinctColors < 3
-						fmt.Printf("Distinct colors in %q: %d\n", outputFilePath, distinctColors)
+						if _, err := fmt.Sscanf(strings.TrimSpace(string(colorCountOut)), "%d", &distinctColors); err != nil {
+							fmt.Printf("Warning: could not parse color count for %q: %v\n", outputFilePath, err)
+							notEnoughDistinctColors = true
+						} else {
+							notEnoughDistinctColors = distinctColors < minColors
+						}
 					}
+
+					if notEnoughDistinctColors {
+						segmentedFileCount++
+						fmt.Printf("Segmenting file: %s, only %d colors\n", f, distinctColors)
+						// segment first using kmeans to reduce noise before
+						// posterizing. this makes faces less cursed.
+						args = []string{
+							f,
+							"(", "+clone", "-alpha", "extract", ")",
+							"-alpha", "off",
+							"-channel", "RGB",
+							"-kmeans", "8",
+							"+channel",
+							"-compose", "CopyOpacity",
+							"-composite",
+						}
+						if reduceValueContrast(outputFilePath) {
+							args = append(args, "-brightness-contrast", "0x-50")
+						}
+
+						// Don't bother with mipmaps. The textures are already small.
+						args = append(args, "-define", "dds:mipmaps=0")
+
+						args = append(args, outputFilePath)
+
+						if err := runProc("magick", args, envOverride); err != nil {
+							return fmt.Errorf("Failed to process file %q: %v", f, err)
+						}
+					} else {
+						posterizedFileCount++
+					}
+				} else {
+					posterizedFileCount++
 				}
-
-				if notEnoughDistinctColors {
-					fmt.Printf("Segmenting file: %s\n", f)
-					// segment first using kmeans to reduce noise before
-					// posterizing. this makes faces less cursed.
-					args = []string{
-						f,
-						"(", "+clone", "-alpha", "extract", ")",
-						"-alpha", "off",
-						"-channel", "RGB",
-						"-kmeans", "27",
-						"+channel",
-						"-resize", "25%",
-						"-filter", "Point",
-						"-compose", "CopyOpacity",
-						"-composite",
-					}
-					if reduceValueContrast(outputFilePath) {
-						args = append(args, "-brightness-contrast", "0x-50")
-					}
-
-					// Don't bother with mipmaps. The textures are already small.
-					args = append(args, "-define", "dds:mipmaps=0")
-
-					args = append(args, outputFilePath)
-
-					if err := runProc("magick", args, envOverride); err != nil {
-						return fmt.Errorf("Failed to process file %q: %v", f, err)
-					}
-				}
-
 			}
 			return nil
 		})
@@ -411,6 +420,7 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 		fmt.Println("FAILURE!!")
 		os.Exit(33)
 	}
+	fmt.Printf("Posterized files: %d, Segmented files: %d\n", posterizedFileCount, segmentedFileCount)
 }
 
 func main() {
