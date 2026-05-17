@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	workers         = 12
+	workers         = 16
 	colorMapShrink  = "256x256>"
 	posterizeNormal = "3"
 	minColors       = 2
@@ -324,7 +324,10 @@ func processFile(
 	defer os.Remove(alphaPath)
 
 	if err := runProc("magick", []string{
-		f, "-alpha", "extract", alphaPath,
+		f, "-alpha", "extract",
+		// force alpha values to 0, 50, and 100%
+		//"-posterize", "3",
+		alphaPath,
 	}, envOverride); err != nil {
 		return fmt.Errorf("failed to extract alpha: %w", err)
 	}
