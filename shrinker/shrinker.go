@@ -322,8 +322,9 @@ func processFile(
 		"(", "+clone", "-alpha", "extract", ")",
 		"-alpha", "off", "-channel", "RGB",
 		"-remap", colorMapFile,
-		"+channel", "-resize", "25%", "-filter", "Point",
+		"+channel",
 		"-compose", "CopyOpacity", "-composite",
+		"-resize", "25%", "-filter", "Point",
 	}
 	if reduceValueContrast(outputFilePath) {
 		args = append(args, "-brightness-contrast", "0x-50")
@@ -369,7 +370,9 @@ func processFile(
 		f,
 		"(", "+clone", "-alpha", "extract", ")",
 		"-alpha", "off", "-channel", "RGB", "-kmeans", "6",
-		"+channel", "-resize", "25%", "-filter", "Point", "-compose", "CopyOpacity", "-composite",
+		"+channel",
+		"-compose", "CopyOpacity", "-composite",
+		"-resize", "25%", "-filter", "Point",
 	}
 	if reduceValueContrast(outputFilePath) {
 		args = append(args, "-brightness-contrast", "0x-50")
