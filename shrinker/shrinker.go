@@ -79,7 +79,7 @@ func getGroup(path string) string {
 		}
 	}
 
-	fileName = strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	fileName = strings.TrimPrefix(strings.TrimSuffix(fileName, filepath.Ext(fileName)), "tx_")
 
 	// prefix determines which group the texture is posterized with.
 
@@ -296,7 +296,6 @@ func shrink(ctx context.Context, rootDir string, outDir string) {
 	fmt.Printf("Groups: %d, Posterized files: %d, Segmented files: %d\n", len(filesByPrefix), posterizedFileCount.Load(), segmentedFileCount.Load())
 }
 
-// check pc_wolf.dds
 func processFile(
 	f, colorMapFile string,
 	repath func(string) (string, error),
@@ -309,30 +308,47 @@ func processFile(
 	if err := os.MkdirAll(filepath.Dir(outputFilePath), os.ModePerm); err != nil {
 		return fmt.Errorf("failed to make output dir: %w", err)
 	}
-
-	// skip if file exists
 	if _, err := os.Stat(outputFilePath); err == nil {
 		fmt.Printf("Skipping file: %s\n", f)
 		return nil
 	}
-
 	fmt.Printf("Processing file: %s\n", f)
+
+	// Extract alpha channel to a temp file.
+	alphaFile, err := os.CreateTemp("", "alpha-*.png")
+	if err != nil {
+		return fmt.Errorf("failed to create alpha temp file: %w", err)
+	}
+	alphaPath := alphaFile.Name()
+	alphaFile.Close()
+	defer os.Remove(alphaPath)
+
+	if err := runProc("magick", []string{
+		f, "-alpha", "extract", alphaPath,
+	}, envOverride); err != nil {
+		return fmt.Errorf("failed to extract alpha: %w", err)
+	}
+
+	// Remap colors (no alpha involvement).
 	args := []string{
 		f,
-		"(", "+clone", "-alpha", "extract", ")",
-		"-alpha", "off", "-channel", "RGB",
+		"-alpha", "off",
+		"-channel", "RGB",
 		"-remap", colorMapFile,
 		"+channel",
-		"-compose", "CopyOpacity", "-composite",
 		"-resize", "25%", "-filter", "Point",
 	}
 	if reduceValueContrast(outputFilePath) {
 		args = append(args, "-brightness-contrast", "0x-50")
 	}
 	args = append(args, "-define", "dds:mipmaps=0", outputFilePath)
-
 	if err := runProc("magick", args, envOverride); err != nil {
 		return fmt.Errorf("failed to remap: %w", err)
+	}
+
+	// Apply saved alpha back onto the output.
+	if err := applyAlpha(outputFilePath, alphaPath); err != nil {
+		return fmt.Errorf("failed to apply alpha: %w", err)
 	}
 
 	if minColors <= 0 {
@@ -340,11 +356,9 @@ func processFile(
 		return nil
 	}
 
-	// Count distinct colors to decide whether to fall back to k-means.
 	colorCountOut, err := exec.Command("magick", outputFilePath,
 		"-channel", "RGB", "-alpha", "off",
 		"-unique-colors", "-format", "%w", "info:").Output()
-
 	var distinctColors int
 	needsSegmentation := err != nil
 	if err == nil {
@@ -363,26 +377,39 @@ func processFile(
 		return nil
 	}
 
-	// Fall back to k-means segmentation for low-color textures.
 	segmentedFileCount.Add(1)
 	fmt.Printf("Segmenting file: %s, only %d colors\n", f, distinctColors)
+
 	args = []string{
 		f,
-		"(", "+clone", "-alpha", "extract", ")",
-		"-alpha", "off", "-channel", "RGB", "-kmeans", "6",
+		"-alpha", "off",
+		"-channel", "RGB", "-kmeans", "6",
 		"+channel",
-		"-compose", "CopyOpacity", "-composite",
 		"-resize", "25%", "-filter", "Point",
 	}
 	if reduceValueContrast(outputFilePath) {
 		args = append(args, "-brightness-contrast", "0x-50")
 	}
 	args = append(args, "-define", "dds:mipmaps=0", outputFilePath)
-
 	if err := runProc("magick", args, envOverride); err != nil {
 		return fmt.Errorf("failed to segment: %w", err)
 	}
+
+	if err := applyAlpha(outputFilePath, alphaPath); err != nil {
+		return fmt.Errorf("failed to apply alpha after segmentation: %w", err)
+	}
+
+	posterizedFileCount.Add(1)
 	return nil
+}
+
+func applyAlpha(imagePath, alphaPath string) error {
+	return runProc("magick", []string{
+		imagePath,
+		alphaPath,
+		"-compose", "CopyOpacity", "-composite",
+		imagePath,
+	}, envOverride)
 }
 
 func main() {
