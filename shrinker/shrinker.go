@@ -325,8 +325,7 @@ func processFile(
 
 	if err := runProc("magick", []string{
 		f, "-alpha", "extract",
-		// force alpha values to 0, 50, and 100%
-		//"-posterize", "3",
+		"-depth", "8",
 		alphaPath,
 	}, envOverride); err != nil {
 		return fmt.Errorf("failed to extract alpha: %w", err)
@@ -410,7 +409,9 @@ func applyAlpha(imagePath, alphaPath string) error {
 	return runProc("magick", []string{
 		imagePath,
 		alphaPath,
-		"-compose", "CopyOpacity", "-composite",
+		"-alpha", "off", // ← ensure alpha image isn't treated as masked
+		"-compose", "CopyOpacity",
+		"-composite",
 		imagePath,
 	}, envOverride)
 }
