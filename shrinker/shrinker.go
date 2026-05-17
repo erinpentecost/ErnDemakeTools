@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	workers         = 16
+	workers         = 32
 	colorMapShrink  = "256x256>"
 	posterizeNormal = "3"
 	minColors       = 2
@@ -314,7 +314,7 @@ func processFile(
 	}
 	fmt.Printf("Processing file: %s\n", f)
 
-	// Extract alpha channel to a temp file.
+	// Extract alpha channel to a temp file AND resize it to match output.
 	alphaFile, err := os.CreateTemp("", "alpha-*.png")
 	if err != nil {
 		return fmt.Errorf("failed to create alpha temp file: %w", err)
@@ -324,21 +324,23 @@ func processFile(
 	defer os.Remove(alphaPath)
 
 	if err := runProc("magick", []string{
-		f, "-alpha", "extract",
+		f,
+		"-alpha", "extract",
 		"-depth", "8",
+		"-resize", "25%", "-filter", "Lanczos", // ← resize here, not during composite
 		alphaPath,
 	}, envOverride); err != nil {
 		return fmt.Errorf("failed to extract alpha: %w", err)
 	}
 
-	// Remap colors (no alpha involvement).
+	// Remap colors (no alpha, no resize — alpha is already pre-resized).
 	args := []string{
 		f,
 		"-alpha", "off",
 		"-channel", "RGB",
 		"-remap", colorMapFile,
 		"+channel",
-		"-resize", "25%", "-filter", "Point",
+		"-resize", "25%", "-filter", "Point", // keep Point for RGB (posterized look)
 	}
 	if reduceValueContrast(outputFilePath) {
 		args = append(args, "-brightness-contrast", "0x-50")
@@ -408,10 +410,13 @@ func processFile(
 func applyAlpha(imagePath, alphaPath string) error {
 	return runProc("magick", []string{
 		imagePath,
+		"-depth", "8",
 		alphaPath,
-		"-alpha", "off", // ← ensure alpha image isn't treated as masked
+		"-depth", "8",
 		"-compose", "CopyOpacity",
 		"-composite",
+		"-alpha", "on",
+		"-depth", "8", // ← force depth on output too
 		imagePath,
 	}, envOverride)
 }
