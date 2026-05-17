@@ -327,7 +327,7 @@ func processFile(
 		f,
 		"-alpha", "extract",
 		"-depth", "8",
-		"-resize", "25%", "-filter", "Lanczos", // ← resize here, not during composite
+		"-resize", finalShrink, "-filter", "Lanczos", // ← resize here, not during composite
 		alphaPath,
 	}, envOverride); err != nil {
 		return fmt.Errorf("failed to extract alpha: %w", err)
@@ -340,7 +340,7 @@ func processFile(
 		"-channel", "RGB",
 		"-remap", colorMapFile,
 		"+channel",
-		"-resize", "25%", "-filter", "Point", // keep Point for RGB (posterized look)
+		"-resize", finalShrink, "-filter", "Point", // keep Point for RGB (posterized look)
 	}
 	if reduceValueContrast(outputFilePath) {
 		args = append(args, "-brightness-contrast", "0x-50")
@@ -389,7 +389,7 @@ func processFile(
 		"-alpha", "off",
 		"-channel", "RGB", "-kmeans", "6",
 		"+channel",
-		"-resize", "25%", "-filter", "Point",
+		"-resize", finalShrink, "-filter", "Point",
 	}
 	if reduceValueContrast(outputFilePath) {
 		args = append(args, "-brightness-contrast", "0x-50")

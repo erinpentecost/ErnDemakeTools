@@ -7,16 +7,19 @@ This is tooling specific to my machine; I made absolutely no effort to make it p
 
 
 /home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mdataextract/' '/home/ern/tes3/mods/TexturePacks/Demake/00 Vanilla'
+
 /home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mods/ModdingResources/TamrielData/00 Data Files' '/home/ern/tes3/mods/TexturePacks/Demake/04 Tamriel Data'
 
+/home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mods/Quests/Morrowind Extended Cut/000 Content (Required)' '/home/ern/tes3/mods/TexturePacks/Demake/09 Morrowind Extended Cut'
 
 /home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mods/ModdingResources/OAAB_Data/' '/home/ern/tes3/mods/TexturePacks/Demake/06 OAAB'
 ^ need to combine folders after
 
-/home/ern/workspace/ErnDemakeTools/shrinker/kram.sh '/home/ern/tes3/mods/TexturePacks/Demake/00 Vanilla' '/home/ern/tes3/mods/TexturePacks/Demake/00 Vanilla ktx' 
-
-/home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mods/ModdingResources/TamrielData/00 Data Files' '/home/ern/tes3/mods/TexturePacks/Demake/04 Tamriel Data'
 
 
+/home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mods/Quests/Death And Taxes/00 Core' '/home/ern/tes3/mods/TexturePacks/Demake/09 Death And Taxes'
 
-/home/ern/workspace/ErnDemakeTools/shrinker/kram.sh '/home/ern/Downloads/Demake/00 Vanilla' '/home/ern/Downloads/Demake/00 Vanilla ktx'
+/home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/tes3/mods/ObjectsClutter/Fantasia Grass Mod v2 Regular Edition Patched/textures_halfsize' '/home/ern/tes3/mods/TexturePacks/Demake/80 Fantasia/textures'
+
+
+/home/ern/workspace/ErnDemakeTools/shrinker/shrink.sh '/home/ern/Downloads/Lush Synthesis 3.0-52931-3-0-1747855102/textures' '/home/ern/tes3/mods/TexturePacks/Demake/10 Lush Synthesis'
